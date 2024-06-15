@@ -27,7 +27,25 @@ void line(Vec2i t0, Vec2i t1, TGAImage &image, TGAColor color) {
 	}
 }
 
-void triangle(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage &image, TGAColor color) {
+float winding(Vec2i t0, Vec2i t1,Vec2i p) {
+	return (p.x-t0.x)*(t1.y-t0.y) - (p.y-t0.y)*(t1.x-t0.x);
+}
+
+void triangle_boundingbox(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage &image, TGAColor color) {
+	Vec2i b0,b1;
+	b0 = Vec2i(std::min(std::min(t0.x,t1.x),t2.x),std::min(std::min(t0.y,t1.y),t2.y));
+	b1 = Vec2i(std::max(std::max(t0.x,t1.x),t2.x),std::max(std::max(t0.y,t1.y),t2.y));
+
+	for (int x = b0.x; x < b1.x; x++) {
+		for (int y = b0.y; y < b1.y; y++) {
+			if (winding(t0,t2,Vec2i(x,y)) < 0 && winding(t2,t1,Vec2i(x,y)) < 0 && winding(t1,t0,Vec2i(x,y)) < 0) {
+				image.set(x,y,color);
+			}
+		}
+	}
+}
+
+void triangle_linesweep(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage &image, TGAColor color) {
 	if (t0.y>t1.y) std::swap(t0, t1); 
     if (t0.y>t2.y) std::swap(t0, t2); 
     if (t1.y>t2.y) std::swap(t1, t2);
@@ -56,9 +74,9 @@ int main(int argc, char** argv) {
 	Vec2i t0[3] = {Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80)}; 
 	Vec2i t1[3] = {Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180)}; 
 	Vec2i t2[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)}; 
-	triangle(t0[0], t0[1], t0[2], image, red); 
-	triangle(t1[0], t1[1], t1[2], image, white); 
-	triangle(t2[0], t2[1], t2[2], image, green);
+	triangle_boundingbox(t0[0], t0[1], t0[2], image, red); 
+	triangle_boundingbox(t1[0], t1[1], t1[2], image, white); 
+	triangle_boundingbox(t2[0], t2[1], t2[2], image, green);
 
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
     image.write_tga_file("output.tga");
