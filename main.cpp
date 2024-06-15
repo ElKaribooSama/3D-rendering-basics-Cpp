@@ -18,11 +18,11 @@ const int height = 200;
 
 void line(Vec2i t0, Vec2i t1, TGAImage &image, TGAColor color) {
 	size_t length = std::max(std::abs(t1.y - t0.y),std::abs(t1.x - t0.x));
-	float step = 1. / length;
+	float step = 1. / (length + 1);
 
 	for (float t = 0; t < 1; t+= step) {
-		int x = t0.x + std::round((t1.x-t0.x)*t);
-		int y = t0.y + std::round((t1.y-t0.y)*t);
+		int x = t0.x + (t1.x-t0.x)*t;
+		int y = t0.y + (t1.y-t0.y)*t;
 		image.set(x,y,color);
 	}
 }
