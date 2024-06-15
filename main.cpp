@@ -3,11 +3,14 @@
 #include "tgaimage.h"
 #include "model.h"
 #include "geometry.h"
+#include <iostream>
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
-const TGAColor green   = TGAColor(0,   255, 0,   255);
-const TGAColor blue   = TGAColor(0,   0,   255, 255);
+const TGAColor green = TGAColor(0,   255, 0,   255);
+const TGAColor blue  = TGAColor(0,   0,   255, 255);
+const TGAColor yellow= TGAColor(255, 255,   0, 255);
+const TGAColor purple= TGAColor(255,   0, 255, 255);
 
 Model *model = NULL;
 const int width  = 200;
@@ -18,8 +21,8 @@ void line(Vec2i t0, Vec2i t1, TGAImage &image, TGAColor color) {
 	float step = 1. / length;
 
 	for (float t = 0; t < 1; t+= step) {
-		int x = t0.x + (t1.x-t0.x)*t;
-		int y = t0.y + (t1.y-t0.y)*t;
+		int x = t0.x + std::round((t1.x-t0.x)*t);
+		int y = t0.y + std::round((t1.y-t0.y)*t);
 		image.set(x,y,color);
 	}
 }
@@ -27,12 +30,24 @@ void line(Vec2i t0, Vec2i t1, TGAImage &image, TGAColor color) {
 void triangle(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage &image, TGAColor color) {
 	if (t0.y>t1.y) std::swap(t0, t1); 
     if (t0.y>t2.y) std::swap(t0, t2); 
-    if (t1.y>t2.y) std::swap(t1, t2); 
-    line(t0, t1, image, green); 
+    if (t1.y>t2.y) std::swap(t1, t2);
+    line(t0, t1, image, blue); 
     line(t1, t2, image, green); 
     line(t2, t0, image, red); 
 
+	float t0s = (float)(t0.x - t2.x) / (t0.y - t2.y);
+	float t1s = (float)(t0.x - t1.x) / (t0.y - t1.y);
+	float t2s = (float)(t1.x - t2.x) / (t1.y - t2.y);
 	
+	for (int y = t0.y; y < t1.y; y += 1) {
+		line(Vec2i(t0.x + (y - t0.y) * t0s,y)
+			,Vec2i(t0.x + (y - t0.y) * t1s,y),image,color);
+	}
+
+	for (int y = t1.y; y < t2.y; y += 1) {
+		line(Vec2i(t0.x + (y - t0.y) * t0s,y)
+			,Vec2i(t1.x + (y - t1.y) * t2s,y),image,color);
+	}
 }
 
 int main(int argc, char** argv) {
