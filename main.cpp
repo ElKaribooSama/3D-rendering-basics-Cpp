@@ -13,8 +13,8 @@ const TGAColor yellow= TGAColor(255, 255,   0, 255);
 const TGAColor purple= TGAColor(255,   0, 255, 255);
 
 Model *model = NULL;
-const int width  = 200;
-const int height = 200;
+const int width  = 800;
+const int height = 800;
 
 void line(Vec2i t0, Vec2i t1, TGAImage &image, TGAColor color) {
 	size_t length = std::max(std::abs(t1.y - t0.y),std::abs(t1.x - t0.x));
@@ -27,18 +27,18 @@ void line(Vec2i t0, Vec2i t1, TGAImage &image, TGAColor color) {
 	}
 }
 
-float winding(Vec2i t0, Vec2i t1,Vec2i p) {
+float winding(Vec2f t0, Vec2f t1,Vec2f p) {
 	return (p.x-t0.x)*(t1.y-t0.y) - (p.y-t0.y)*(t1.x-t0.x);
 }
 
-void triangle_boundingbox(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage &image, TGAColor color) {
-	Vec2i b0,b1;
-	b0 = Vec2i(std::min(std::min(t0.x,t1.x),t2.x),std::min(std::min(t0.y,t1.y),t2.y));
-	b1 = Vec2i(std::max(std::max(t0.x,t1.x),t2.x),std::max(std::max(t0.y,t1.y),t2.y));
+void triangle_boundingbox(Vec2f t0, Vec2f t1, Vec2f t2, TGAImage &image, TGAColor color) {
+	Vec2f b0,b1;
+	b0 = Vec2f(std::min(std::min(t0.x,t1.x),t2.x),std::min(std::min(t0.y,t1.y),t2.y));
+	b1 = Vec2f(std::max(std::max(t0.x,t1.x),t2.x),std::max(std::max(t0.y,t1.y),t2.y));
 
 	for (int x = b0.x; x < b1.x; x++) {
 		for (int y = b0.y; y < b1.y; y++) {
-			if (winding(t0,t2,Vec2i(x,y)) < 0 && winding(t2,t1,Vec2i(x,y)) < 0 && winding(t1,t0,Vec2i(x,y)) < 0) {
+			if (winding(t2,t0,Vec2f(x,y)) < 0 && winding(t1,t2,Vec2f(x,y)) < 0 && winding(t0,t1,Vec2f(x,y)) < 0) {
 				image.set(x,y,color);
 			}
 		}
@@ -69,14 +69,41 @@ void triangle_linesweep(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage &image, TGAColor 
 }
 
 int main(int argc, char** argv) {
+	if (2==argc) {
+        model = new Model(argv[1]);
+    } else {
+        model = new Model("obj/african_head.obj");
+    }
+
     TGAImage image(width, height, TGAImage::RGB);
 
-	Vec2i t0[3] = {Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80)}; 
-	Vec2i t1[3] = {Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180)}; 
-	Vec2i t2[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)}; 
-	triangle_boundingbox(t0[0], t0[1], t0[2], image, red); 
-	triangle_boundingbox(t1[0], t1[1], t1[2], image, white); 
-	triangle_boundingbox(t2[0], t2[1], t2[2], image, green);
+	Vec3f light_dir(0,0,-1); // define light_dir
+
+	for (int i=0; i<model->nfaces(); i++) { 
+		std::vector<int> face = model->face(i); 
+		Vec2f screen_coords[3]; 
+		Vec3f world_coords[3]; 
+		for (int j=0; j<3; j++) { 
+			Vec3f v = model->vert(face[j]); 
+			screen_coords[j] = Vec2f((v.x+1.)*width/2., (v.y+1.)*height/2.); 
+			world_coords[j]  = v; 
+		} 
+		Vec3f n = (world_coords[2]-world_coords[0])^(world_coords[1]-world_coords[0]); 
+		n.normalize(); 
+		float intensity = n*light_dir; 
+		if (intensity>0) { 
+			triangle_boundingbox(screen_coords[0], screen_coords[1], screen_coords[2], image, TGAColor(intensity*255, intensity*255, intensity*255, 255)); 
+		} 
+	}
+
+	// Vec2i t0[3] = {Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80)}; 
+	// Vec2i t1[3] = {Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180)}; 
+	// Vec2i t2[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)}; 
+	// triangle_boundingbox(t0[0], t0[1], t0[2], image, red); 
+	// triangle_boundingbox(t1[0], t1[1], t1[2], image, white); 
+	// triangle_boundingbox(t2[0], t2[1], t2[2], image, green);
+
+	
 
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
     image.write_tga_file("output.tga");
